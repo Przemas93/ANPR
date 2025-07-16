@@ -1,0 +1,12 @@
+[
+  {
+    "name": "Kamera 1",
+    "rtsp_url": "rtsp://admin:admin@192.168.1.168:554/Streaming/channels/101",
+    "roi": {
+      "x1": 65,
+      "y1": 103,
+      "x2": 216,
+      "y2": 144
+    }
+  }
+]

@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>ANPR Panel</title>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='logo.png') }}">
+    <style>
+    /* ... style bez zmian ... */
+    body { font-family: Arial, sans-serif; margin:40px;}
+    .navbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
+        background: #f7f7f7; border-radius: 12px; box-shadow: 0 2px 16px #0001;
+        padding: 13px 24px 13px 24px; margin-bottom: 32px; }
+    .navbar-user { margin-right: 22px; font-weight: 500; color: #294274; }
+    .navbar a, .navbar button {
+        display: inline-block; padding: 7px 19px; border: none; border-radius: 6px;
+        background: #e3eafc; color: #294274; font-size: 1em; font-weight: 500;
+        text-decoration: none; cursor: pointer; transition: background 0.17s, color 0.13s;
+    }
+    .navbar a:hover, .navbar button:hover { background: #294274; color: #fff; }
+    .navbar .admin { background: #ffe1cf; color: #c76010; }
+    .navbar .admin:hover { background: #c76010; color: #fff;}
+    table { border-collapse: collapse; width: 100%; }
+    th, td { border: 1px solid #aaa; padding: 8px; }
+    img { max-width: 220px; }
+    .msg { margin-bottom:18px; color:green; font-weight:bold;}
+    #myModal { display:none; position:fixed; z-index:1000; left:0; top:0; width:100vw; height:100vh; overflow:auto; background:rgba(0,0,0,0.73);}
+    .modal-content { background:#f4f4f4; margin:50px auto; padding:18px 24px 22px 24px; border-radius:16px; width:90%; max-width:900px; position:relative;}
+    .close { color: #294274; position:absolute; top:9px; right:20px; font-size:42px; font-weight:bold; cursor:pointer;}
+    .modal-img-wrap {display:flex; align-items:flex-start; gap:18px;}
+    .modal-full-img {max-width:72vw; max-height:80vh; border-radius:12px;}
+    .modal-plate-img {border:3px solid #294274; border-radius:12px; margin-top:3px; max-width:190px; max-height:110px;}
+    @media (max-width: 720px) {
+        .modal-img-wrap { flex-direction:column; align-items:center;}
+        .modal-plate-img {max-width:95vw;}
+        .modal-full-img {max-width:95vw;}
+    }
+    .alarm-btn { background:#c40000;color:#fff;border:none;padding:12px 24px;border-radius:7px;font-weight:bold;font-size:1.1em;}
+    .alarm-btn:hover { background:#8b0000;}
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <span class="navbar-user">
+            Zalogowany: <b>{{ user.id }}</b> (rola: <b>{{ user.role }}</b>)
+        </span>
+        <a href="{{ url_for('index') }}">Wyniki rozpoznania tablic</a>
+        <a href="{{ url_for('live') }}">Podgląd kamer na żywo</a>
+        <a href="{{ url_for('logout') }}">Wyloguj</a>
+        {% if user.role == 'admin' %}
+            <a href="{{ url_for('admin') }}" class="admin">Panel admina</a>
+            <a href="{{ url_for('manage_users') }}" class="admin">Zarządzaj użytkownikami</a>
+            <a href="{{ url_for('admin_cameras') }}" class="admin">Kamery (zarządzaj)</a>
+            <a href="{{ url_for('export_csv') }}" class="admin">Eksportuj detekcje do CSV</a>
+        {% else %}
+            <a href="{{ url_for('export_csv') }}">Eksportuj detekcje do CSV</a>
+        {% endif %}
+        {% if user.role in ['admin', 'user'] %}
+            <a href="{{ url_for('manage_wanted') }}" class="admin">Lista poszukiwanych</a>
+        {% endif %}
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <ul style="list-style:none;">
+          {% for category, message in messages %}
+            <li style="color:{% if category=='success' %}green{% else %}red{% endif %};"><b>{{ message }}</b></li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+    {% endwith %}
+
+    <h1>Wyniki rozpoznania tablic rejestracyjnych</h1>
+    <form method="get" style="display: flex; align-items: flex-end; gap: 22px; margin-bottom:28px; flex-wrap: wrap;">
+    <div>
+        <label for="number" style="font-size:1.12em;">Numer:</label><br>
+        <input name="number" id="number" value="{{ request.args.get('number', '') }}" 
+               style="font-size:1.15em; padding: 10px 16px; width:180px; border-radius:8px; border:1.5px solid #c6d0e6;">
+    </div>
+    <div>
+        <label for="camera" style="font-size:1.12em;">Kamera:</label><br>
+        <input name="camera" id="camera" value="{{ request.args.get('camera', '') }}" 
+               style="font-size:1.15em; padding: 10px 16px; width:180px; border-radius:8px; border:1.5px solid #c6d0e6;">
+    </div>
+    <div>
+        <label for="from_" style="font-size:1.12em;">Data od:</label><br>
+        <input type="date" name="from_" id="from_" value="{{ request.args.get('from_', '') }}"
+               style="font-size:1.12em; padding: 10px 14px; border-radius:8px; border:1.5px solid #c6d0e6;">
+    </div>
+    <div>
+        <label for="to" style="font-size:1.12em;">Data do:</label><br>
+        <input type="date" name="to" id="to" value="{{ request.args.get('to', '') }}"
+               style="font-size:1.12em; padding: 10px 14px; border-radius:8px; border:1.5px solid #c6d0e6;">
+    </div>
+    <div>
+        <button type="submit"
+            style="font-size:1.18em; padding: 11px 32px; border-radius:8px; background:#294274; color:white; border:none; font-weight:600; margin-top:6px;">
+            Szukaj
+        </button>
+    </div>
+    <div style="margin-left:20px;">
+        <input type="checkbox" id="autorefresh" checked style="vertical-align:middle;">
+        <label for="autorefresh" style="font-size:1.05em; vertical-align:middle;cursor:pointer;">Auto-odświeżanie wyników</label>
+    </div>
+</form>
+
+<form id="bulk-delete-form" method="post" action="{{ url_for('delete_multiple') }}">
+    <table>
+        <tr>
+            {% if user.role == 'admin' %}
+            <th><input type="checkbox" id="select-all" title="Zaznacz wszystkie"></th>
+            {% endif %}
+            <th>Data</th>
+            <th>Kamera</th>
+            <th>Numer</th>
+            <th>Zdjęcie</th>
+            {% if user.role == 'admin' %}
+            <th>Akcje</th>
+            {% endif %}
+        </tr>
+        {% for plate in plates %}
+        <tr>
+            {% if user.role == 'admin' %}
+            <td>
+                <input type="checkbox" name="uids" value="{{ plate.timestamp }}-{{ plate.camera }}-{{ plate.number }}">
+            </td>
+            {% endif %}
+            <td>{{ plate.timestamp }}</td>
+            <td>{{ plate.camera }}</td>
+            <td>{{ plate.number }}</td>
+            <td>
+            {% if plate.img_path %}
+                <!-- Klikalne zdjęcie tablicy -->
+                <img src="{{ url_for('get_capture', filename=plate.img_path.split('/')[-1]) }}" 
+                     style="max-width:180px;cursor:pointer;border:2px solid #294274;border-radius:7px;"
+                     onclick="showModal(
+                        '{{ plate.full_img_path if plate.full_img_path is defined else '' | safe }}',
+                        '{{ plate.img_path if plate.img_path is defined else '' | safe }}'
+                     )">
+            {% endif %}
+            </td>
+            {% if user.role == 'admin' %}
+            <td>
+                <!-- Usuwanie z zachowaniem filtrów -->
+                <form method="post"
+                    action="{{ url_for('delete_plate', uid=plate.timestamp ~ '-' ~ plate.camera ~ '-' ~ plate.number, number=request.args.get('number', ''), camera=request.args.get('camera', ''), from_=request.args.get('from_', ''), to=request.args.get('to', '')) }}"
+                    style="display:inline;">
+                    <button type="submit" onclick="return confirm('Na pewno usunąć ten wpis?')">Usuń</button>
+                </form>
+            </td>
+            {% endif %}
+        </tr>
+        {% endfor %}
+    </table>
+    {% if user.role == 'admin' %}
+    <button type="submit" class="alarm-btn" style="margin-top:18px;" onclick="return confirm('Usunąć zaznaczone wpisy?')">Usuń zaznaczone</button>
+    {% endif %}
+</form>
+
+<!-- Modal powiększenia zdjęcia -->
+<div id="myModal">
+    <div class="modal-content">
+        <span class="close" onclick="closeModal()">&times;</span>
+        <div class="modal-img-wrap">
+            <img id="modal-full-img" class="modal-full-img" src="" alt="Full">
+            <img id="modal-plate-img" class="modal-plate-img" src="" alt="Tablica">
+        </div>
+    </div>
+</div>
+
+<!-- MODAL alarmowy -->
+<div id="alarm-modal" style="display:none; position:fixed; z-index:2000; left:0; top:0; width:100vw; height:100vh; background:rgba(0,0,0,0.8);">
+  <div style="background:#fff; border-radius:15px; max-width:550px; margin:70px auto; padding:20px; position:relative; text-align:center;">
+    <span id="alarm-close" onclick="closeAlarm()" style="position:absolute; right:18px; top:6px; cursor:pointer; font-size:2em;">&times;</span>
+    <h2 style="color:#c40000;">🚨 UWAGA! WYKRYTO NUMER POSZUKIWANY!</h2>
+    <div id="alarm-info"></div>
+    <img id="alarm-img" style="max-width:95%; margin-top:14px; border-radius:9px; border:3px solid #c40000;">
+    <img id="alarm-full" style="max-width:95%; margin-top:8px; border-radius:9px;">
+    <audio id="alarm-audio" src="https://cdn.pixabay.com/audio/2022/07/26/audio_124bfa48b6.mp3" preload="auto"></audio>
+  </div>
+</div>
+
+<script>
+function showModal(fullImgPath, plateImgPath) {
+    var modal = document.getElementById('myModal');
+    var fullImg = document.getElementById('modal-full-img');
+    var plateImg = document.getElementById('modal-plate-img');
+    if (fullImgPath && fullImgPath !== 'None' && fullImgPath !== '') {
+        fullImg.src = '/captures/' + fullImgPath.split('/').pop();
+    } else {
+        fullImg.src = '';
+    }
+    if (plateImgPath && plateImgPath !== 'None' && plateImgPath !== '') {
+        plateImg.src = '/captures/' + plateImgPath.split('/').pop();
+    } else {
+        plateImg.src = '';
+    }
+    modal.style.display = 'block';
+}
+function closeModal() {
+    document.getElementById('myModal').style.display = 'none';
+}
+window.onclick = function(event) {
+    var modal = document.getElementById('myModal');
+    var alarm = document.getElementById('alarm-modal');
+    if (event.target == modal) { modal.style.display = "none"; }
+    if (event.target == alarm) { alarm.style.display = "none"; }
+}
+// Auto-odświeżanie
+let refreshEnabled = localStorage.getItem('autoRefresh') !== 'false';
+document.getElementById('autorefresh').checked = refreshEnabled;
+function reloadIfNeeded(){
+    if(refreshEnabled){
+        location.reload();
+    }
+}
+setInterval(reloadIfNeeded, 4000);
+document.getElementById('autorefresh').onchange = function(){
+    refreshEnabled = this.checked;
+    localStorage.setItem('autoRefresh', refreshEnabled ? 'true' : 'false');
+}
+// Alarm na poszukiwany
+function showAlarm(data) {
+    document.getElementById("alarm-info").innerHTML = `
+      <b>Numer:</b> <span style="font-size:1.25em;color:#c40000">${data.number}</span><br>
+      <b>Kamera:</b> ${data.camera}<br>
+      <b>Data:</b> ${data.timestamp}<br>`;
+    document.getElementById("alarm-img").src = "/" + data.img_path.replace(/^\/*/, "");
+    document.getElementById("alarm-full").src = "/" + data.full_img_path.replace(/^\/*/, "");
+    document.getElementById("alarm-modal").style.display = "block";
+    document.getElementById("alarm-audio").play();
+}
+function closeAlarm() {
+    document.getElementById("alarm-modal").style.display = "none";
+}
+setInterval(function() {
+    fetch('/wanted_alarm').then(r => r.json()).then(data => {
+        if(data && data.number) showAlarm(data);
+    });
+}, 2200);
+
+// Zbiorcze zaznaczanie
+const selectAll = document.getElementById('select-all');
+if(selectAll){
+    selectAll.addEventListener('change', function(){
+        let chks = document.querySelectorAll('input[name="uids"]');
+        chks.forEach(c => c.checked = this.checked);
+    });
+}
+</script>
+</body>
+</html>

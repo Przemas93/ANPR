@@ -1,0 +1,22 @@
+[
+  {
+    "timestamp": "2025-06-20 12:57:58",
+    "user": "admin",
+    "action": "Zalogowano"
+  },
+  {
+    "timestamp": "2025-06-20 13:05:38",
+    "user": "admin",
+    "action": "Zalogowano"
+  },
+  {
+    "timestamp": "2025-06-20 13:07:07",
+    "user": "user",
+    "action": "Zalogowano"
+  },
+  {
+    "timestamp": "2025-06-20 13:09:11",
+    "user": "admin",
+    "action": "Zalogowano"
+  }
+]

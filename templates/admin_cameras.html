@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Zarządzanie kamerami</title>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='logo.png') }}">
+    <style>
+    body { font-family: Arial, sans-serif; margin:40px;}
+    .navbar {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 10px;
+        background: #f7f7f7;
+        border-radius: 12px;
+        box-shadow: 0 2px 16px #0001;
+        padding: 13px 24px 13px 24px;
+        margin-bottom: 32px;
+    }
+    .navbar-user {
+        margin-right: 22px;
+        font-weight: 500;
+        color: #294274;
+    }
+    .navbar a, .navbar button {
+        display: inline-block;
+        padding: 7px 19px;
+        border: none;
+        border-radius: 6px;
+        background: #e3eafc;
+        color: #294274;
+        font-size: 1em;
+        font-weight: 500;
+        text-decoration: none;
+        cursor: pointer;
+        transition: background 0.17s, color 0.13s;
+        margin-right: 0;
+    }
+    .navbar a:hover, .navbar button:hover {
+        background: #294274;
+        color: #fff;
+    }
+    .navbar .admin { background: #ffe1cf; color: #c76010; }
+    .navbar .admin:hover { background: #c76010; color: #fff;}
+    table { border-collapse:collapse; width: 100%; }
+    th, td { border:1px solid #bbb; padding:8px;}
+    .form-row { margin:12px 0;}
+    input[type="text"] { width: 97%; }
+    form.inline { display: inline; }
+    .msg { margin-bottom:18px; color:green; font-weight:bold;}
+    .edit-form input[type="text"] { width: 120px;}
+    .edit-btn { margin-left: 8px;}
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <span class="navbar-user">
+            Zalogowany: <b>{{ user.id }}</b> (rola: <b>{{ user.role }}</b>)
+        </span>
+        <a href="{{ url_for('index') }}">Wyniki rozpoznania tablic</a>
+        <a href="{{ url_for('live') }}">Podgląd kamer na żywo</a>
+        <a href="{{ url_for('logout') }}">Wyloguj</a>
+        {% if user.role == 'admin' %}
+            <a href="{{ url_for('admin') }}" class="admin">Panel admina</a>
+            <a href="{{ url_for('manage_users') }}" class="admin">Zarządzaj użytkownikami</a>
+            <a href="{{ url_for('admin_cameras') }}" class="admin">Kamery (zarządzaj)</a>
+            <a href="{{ url_for('export_csv') }}" class="admin">Eksportuj detekcje do CSV</a>
+        {% endif %}
+    </div>
+
+    <h2>Kamery IP</h2>
+    {% if msg %}
+      <div class="msg">{{ msg }}</div>
+    {% endif %}
+
+    <table>
+        <tr><th>Nazwa</th><th>RTSP URL</th><th>Edycja</th><th>Usuń</th></tr>
+        {% for cam in cameras %}
+        <tr>
+          <td>
+            <form method="post" class="edit-form inline">
+              <input type="hidden" name="edit_camera" value="{{ cam.name }}">
+              <input type="text" name="edit_name" value="{{ cam.name }}" required>
+          </td>
+          <td>
+              <input type="text" name="edit_url" value="{{ cam.rtsp_url }}" required>
+          </td>
+          <td>
+              <button type="submit" class="edit-btn">Zapisz</button>
+            </form>
+          </td>
+          <td>
+            <form method="post" class="inline" style="margin:0;">
+              <input type="hidden" name="delete_camera" value="{{ cam.name }}">
+              <button type="submit" onclick="return confirm('Usunąć tę kamerę?')">🗑 Usuń</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+    </table>
+
+    <h3>Dodaj nową kamerę</h3>
+    <form method="post">
+        <div class="form-row">
+            Nazwa: <input name="cam_name" required>
+            RTSP URL: <input name="cam_url" style="width:320px;" required>
+            <button type="submit" name="add_camera" value="1">Dodaj</button>
+        </div>
+    </form>
+    <p><a href="{{ url_for('index') }}">↩ Powrót</a></p>
+</body>
+</html>

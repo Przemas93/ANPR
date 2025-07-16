@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Lista poszukiwanych numerów</title>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='logo.png') }}">
+    <style>
+        body { font-family: Arial, sans-serif; margin:40px;}
+        .box { max-width:440px; margin:auto; border:1px solid #ccc; padding:26px; border-radius:12px;}
+        input { width:80%; padding:7px; margin-bottom:8px;}
+        button { padding:7px 18px;}
+        ul { list-style:none; padding:0; }
+        li { margin:7px 0; }
+        .msg { color: green;}
+        .admin { background: #ffe1cf; color: #c76010; border-radius:5px; padding:1px 6px;}
+    </style>
+</head>
+<body>
+    <div class="box">
+        <h2>Numery poszukiwane</h2>
+        {% if msg %}
+          <div class="msg">{{ msg }}</div>
+        {% endif %}
+        <form method="post">
+            <input name="new_number" maxlength="10" placeholder="Nowy numer (np. WR12345)" required>
+            <button type="submit">Dodaj</button>
+        </form>
+        <ul>
+        {% for n in wanted %}
+          <li>
+            <b>{{ n }}</b>
+            {% if user.role in ["admin", "user"] %}
+            <form method="post" style="display:inline;">
+                <input type="hidden" name="delete_number" value="{{ n }}">
+                <button type="submit" class="admin">Usuń</button>
+            </form>
+            {% endif %}
+          </li>
+        {% endfor %}
+        </ul>
+        <p><a href="{{ url_for('index') }}">↩ Powrót do panelu</a></p>
+    </div>
+</body>
+</html>

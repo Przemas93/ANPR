@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Zarządzanie użytkownikami</title>
+<link rel="icon" type="image/png" href="{{ url_for('static', filename='logo.png') }}">
+
+    <style>
+        body { font-family: Arial; margin:40px; }
+        .box { max-width:500px; margin:auto; border:1px solid #ccc; padding:30px; border-radius:8px;}
+        input, select { width: 100%; margin-bottom:15px; padding: 8px;}
+        button { width: 100%; padding: 10px; }
+        ul { list-style: none; padding: 0; }
+        li { margin-bottom: 10px; }
+        .err { color: red; }
+        .msg { color: green; }
+    </style>
+</head>
+<body>
+    <div class="box">
+        <h2>Dodaj użytkownika</h2>
+        <form method="post">
+            <label>Login:</label>
+            <input name="new_user" required>
+            <label>Hasło:</label>
+            <input type="password" name="new_pass" required>
+            <label>Rola:</label>
+            <select name="new_role">
+                <option value="user">user</option>
+                <option value="admin">admin</option>
+            </select>
+            <button type="submit">Dodaj</button>
+        </form>
+        
+        <h2>Zmień hasło</h2>
+        <form method="post">
+            <label>Login:</label>
+            <input name="change_pass" required>
+            <label>Nowe hasło:</label>
+            <input type="password" name="new_pass2" required>
+            <button type="submit">Zmień</button>
+        </form>
+
+        {% if msg %}
+          <p class="{% if 'nie' in msg.lower() %}err{% else %}msg{% endif %}"><b>{{ msg }}</b></p>
+        {% endif %}
+
+        <h3>Aktualni użytkownicy:</h3>
+        <ul>
+            {% for u in users %}
+              <li>
+                {{ u }} ({{ users[u]["role"] }})
+                {% if u != "admin" %}
+                  <form method="post" style="display:inline;">
+                      <input type="hidden" name="delete_user" value="{{ u }}">
+                      <button type="submit" onclick="return confirm('Na pewno usunąć użytkownika {{ u }}?')">Usuń</button>
+                  </form>
+                {% endif %}
+              </li>
+            {% endfor %}
+        </ul>
+
+        <p><a href="{{ url_for('index') }}">Powrót do panelu</a></p>
+    </div>
+</body>
+</html>

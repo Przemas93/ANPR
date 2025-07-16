@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Podgląd kamer na żywo</title>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='logo.png') }}">
+    <style>
+        body { font-family: Arial, sans-serif; margin:40px;}
+        .navbar {
+            display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
+            background: #f7f7f7; border-radius: 12px;
+            box-shadow: 0 2px 16px #0001;
+            padding: 13px 24px 13px 24px;
+            margin-bottom: 32px;
+        }
+        .navbar-user {
+            margin-right: 22px;
+            font-weight: 500;
+            color: #294274;
+        }
+        .navbar a, .navbar button {
+            display: inline-block;
+            padding: 7px 19px;
+            border: none;
+            border-radius: 6px;
+            background: #e3eafc;
+            color: #294274;
+            font-size: 1em;
+            font-weight: 500;
+            text-decoration: none;
+            cursor: pointer;
+            transition: background 0.17s, color 0.13s;
+            margin-right: 0;
+        }
+        .navbar a:hover, .navbar button:hover {
+            background: #294274;
+            color: #fff;
+        }
+        .navbar .admin { background: #ffe1cf; color: #c76010; }
+        .navbar .admin:hover { background: #c76010; color: #fff;}
+        .grid { display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 400px); gap: 18px;}
+        .cell { border:1px solid #aaa; border-radius:14px; background:#f7faff; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; position: relative; padding-top: 12px;}
+        .title { margin-bottom:8px; font-weight:bold; font-size:1.18em;}
+        .snap, .stream { max-width:100%; max-height:240px; border-radius:4px; cursor:pointer; transition: box-shadow .2s;}
+        .snap:hover, .stream:hover { box-shadow:0 0 10px 3px #2196f3;}
+        .cell .switch { margin:11px 0 8px 0; }
+        .switch button {
+            margin: 0 4px;
+            min-width: 70px;
+            font-size: 1.01em;
+        }
+        .switch button.active {
+            background: #294274;
+            color: #fff;
+            font-weight: bold;
+            box-shadow: 0 0 8px #29427422;
+        }
+        .roi-btns {margin-bottom:6px;}
+        .roi-box {
+            position: absolute; border: 2px solid #2b90fa; pointer-events: none;
+            box-shadow: 0 0 14px #2b90fa55; z-index: 6;
+            background: rgba(43,144,250,0.08);
+        }
+        .cell .status {margin-top:7px; font-size:1em;}
+        .cell .status.online { color: green;}
+        .cell .status.off { color: #a33;}
+        .cell .status.brak { color: #a33;}
+        .cell .status.wait { color: #999;}
+        .cell .status span { font-size:0.9em; margin-left: 9px;}
+        .cell .lastplate {font-size: 0.98em; margin-top: 3px; color:#333;}
+        .cell .lastplate b { font-size: 1.09em;}
+        .cell .lastplate small { font-size: 0.94em; color:#999;}
+        .cell-empty {
+            background: #fcfcfc; display:flex; flex-direction:column;
+            align-items:center; justify-content:center;
+        }
+        .cell-empty .logo {max-width:70%; max-height:110px; opacity:0.25; margin-bottom:20px;}
+        .cell-empty .text {color:#bbb; font-size:1.13em; font-weight:bold;}
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <span class="navbar-user">
+            Zalogowany: <b>{{ user.id }}</b> (rola: <b>{{ user.role }}</b>)
+        </span>
+        <a href="{{ url_for('index') }}">Wyniki rozpoznania tablic</a>
+        <a href="{{ url_for('live') }}">Podgląd kamer na żywo</a>
+        <a href="{{ url_for('logout') }}">Wyloguj</a>
+        {% if user.role == 'admin' %}
+            <a href="{{ url_for('admin') }}" class="admin">Panel admina</a>
+            <a href="{{ url_for('manage_users') }}" class="admin">Zarządzaj użytkownikami</a>
+            <a href="{{ url_for('admin_cameras') }}" class="admin">Kamery (zarządzaj)</a>
+            <a href="{{ url_for('export_csv') }}" class="admin">Eksportuj detekcje do CSV</a>
+        {% endif %}
+    </div>
+    <h2>Podgląd kamer na żywo</h2>
+    <div class="grid">
+    {% for idx in range(9) %}
+      {% if idx < cameras|length %}
+        {% set cam = cameras[idx] %}
+        <div class="cell" id="cell-{{ idx }}">
+            <div class="title">{{ cam.name }}</div>
+            <div style="position:relative; display:inline-block;">
+                <img id="snap-{{ idx }}" class="snap" data-src="{{ url_for('snapshot', camera=cam.name) }}" src="{{ url_for('snapshot', camera=cam.name) }}?t={{ idx }}" alt="Brak obrazu">
+                <img id="stream-{{ idx }}" class="stream" src="{{ url_for('stream', camera=cam.name) }}?t={{ idx }}" alt="Stream" style="display:none;">
+                <div class="roi-box" id="roi-box-{{ idx }}" style="display:none;"></div>
+            </div>
+            <div class="switch">
+                <button id="btn-snap-{{ idx }}" onclick="switchMode({{ idx }}, 'snapshot')" class="active">Obraz</button>
+                <button id="btn-stream-{{ idx }}" onclick="switchMode({{ idx }}, 'stream')">LIVE</button>
+            </div>
+            <div class="roi-btns">
+                <button onclick="enableRoi({{ idx }})">Zaznacz ROI</button>
+                <button id="save-btn-{{ idx }}" onclick="saveRoi({{ idx }})" disabled>Zapisz ROI</button>
+                <button onclick="removeRoi({{ idx }})">Usuń ROI</button>
+            </div>
+            <div class="status online" id="status-{{ idx }}">Online</div>
+        </div>
+      {% else %}
+        <div class="cell cell-empty">
+            <img src="{{ url_for('static', filename='logo.png') }}" class="logo">
+            <div class="text">Brak kamery<br><span style="font-size:0.95em;">Wkrótce dostępna</span></div>
+        </div>
+      {% endif %}
+    {% endfor %}
+    </div>
+    <script>
+    const cameras = [
+        {% for cam in cameras %}
+        {
+            name: `{{ cam.name }}`,
+            snapshot: `{{ url_for('snapshot', camera=cam.name) }}`,
+            stream: `{{ url_for('stream', camera=cam.name) }}`,
+            roi: {{ cam.roi|tojson if cam.roi else 'null' }}
+        },
+        {% endfor %}
+    ];
+    let roiStart = null, roiEnd = null, drawing = false, currentIdx = null, pendingRoi = {};
+    let snapshotPaused = Array(cameras.length).fill(false);
+
+    function refreshAll() {
+        let imgs = document.querySelectorAll('img.snap');
+        imgs.forEach((img, idx) => {
+            if(img.style.display !== "none" && !snapshotPaused[idx]) {
+                img.src = img.dataset.src + '?t=' + new Date().getTime();
+            }
+        });
+    }
+    setInterval(refreshAll, 2000);
+
+    function switchMode(idx, mode) {
+        const snap = document.getElementById('snap-'+idx);
+        const stream = document.getElementById('stream-'+idx);
+        snapshotPaused[idx] = false;
+        if(mode === "stream") {
+            snap.style.display = "none";
+            stream.style.display = "";
+            stream.src = cameras[idx].stream + "?t=" + new Date().getTime();
+        } else {
+            snap.style.display = "";
+            stream.style.display = "none";
+            snap.src = cameras[idx].snapshot + "?t=" + new Date().getTime();
+        }
+        document.getElementById('btn-snap-' + idx).classList.remove('active');
+        document.getElementById('btn-stream-' + idx).classList.remove('active');
+        if (mode === 'snapshot') {
+            document.getElementById('btn-snap-' + idx).classList.add('active');
+        } else {
+            document.getElementById('btn-stream-' + idx).classList.add('active');
+        }
+    }
+
+    function drawRoi(idx, roi) {
+        const img = document.getElementById('snap-'+idx);
+        const box = document.getElementById('roi-box-'+idx);
+        if (!roi) { box.style.display = "none"; return; }
+        // zakładamy snapshot ma 320x180
+        const imgW = img.width, imgH = img.height;
+        const x = Math.round((roi.x1) * imgW / 320);
+        const y = Math.round((roi.y1) * imgH / 180);
+        const w = Math.round((roi.x2 - roi.x1) * imgW / 320);
+        const h = Math.round((roi.y2 - roi.y1) * imgH / 180);
+        box.style.left = x+"px";
+        box.style.top = y+"px";
+        box.style.width = w+"px";
+        box.style.height = h+"px";
+        box.style.display = "block";
+    }
+
+    // Po załadowaniu narysuj ROI dla każdej kamery jeśli istnieje
+    window.onload = function() {
+        cameras.forEach((cam, idx) => {
+            if (cam.roi) drawRoi(idx, cam.roi);
+            switchMode(idx, 'snapshot');
+        });
+    };
+
+    function enableRoi(idx) {
+        switchMode(idx, "snapshot");
+        snapshotPaused[idx] = true;
+        const img = document.getElementById('snap-'+idx);
+        const roiBox = document.getElementById('roi-box-'+idx);
+        document.getElementById('save-btn-'+idx).disabled = true;
+        img.style.pointerEvents = 'auto';
+
+        roiBox.style.display = "none";
+        img.onmousedown = function(e) {
+            drawing = true;
+            currentIdx = idx;
+            const rect = img.getBoundingClientRect();
+            roiStart = {x: e.clientX - rect.left, y: e.clientY - rect.top};
+            roiBox.style.display = "block";
+            roiBox.style.left = roiStart.x+"px";
+            roiBox.style.top = roiStart.y+"px";
+            roiBox.style.width = "1px";
+            roiBox.style.height = "1px";
+        };
+        img.onmousemove = function(e) {
+            if (!drawing || currentIdx !== idx) return;
+            const rect = img.getBoundingClientRect();
+            roiEnd = {x: e.clientX - rect.left, y: e.clientY - rect.top};
+            const x = Math.min(roiStart.x, roiEnd.x);
+            const y = Math.min(roiStart.y, roiEnd.y);
+            const w = Math.abs(roiEnd.x - roiStart.x);
+            const h = Math.abs(roiEnd.y - roiStart.y);
+            roiBox.style.left = x + "px";
+            roiBox.style.top = y + "px";
+            roiBox.style.width = w + "px";
+            roiBox.style.height = h + "px";
+            roiBox.style.display = "block";
+        };
+        img.onmouseup = function(e) {
+            if (!drawing || currentIdx !== idx) return;
+            drawing = false;
+            img.style.pointerEvents = 'auto';
+            const rect = img.getBoundingClientRect();
+            roiEnd = {x: e.clientX - rect.left, y: e.clientY - rect.top};
+            if (Math.abs(roiEnd.x - roiStart.x) < 10 || Math.abs(roiEnd.y - roiStart.y) < 10) {
+                roiBox.style.display = "none";
+                pendingRoi[idx] = null;
+                document.getElementById('save-btn-'+idx).disabled = true;
+                return;
+            }
+            roiBox.style.display = "block";
+            document.getElementById('save-btn-'+idx).disabled = false;
+            const x = Math.min(roiStart.x, roiEnd.x);
+            const y = Math.min(roiStart.y, roiEnd.y);
+            const w = Math.abs(roiEnd.x - roiStart.x);
+            const h = Math.abs(roiEnd.y - roiStart.y);
+            const imgW = img.width, imgH = img.height;
+            const x1 = Math.round((x) * 320 / imgW);
+            const y1 = Math.round((y) * 180 / imgH);
+            const x2 = Math.round((x + w) * 320 / imgW);
+            const y2 = Math.round((y + h) * 180 / imgH);
+            pendingRoi[idx] = {x1, y1, x2, y2};
+        };
+    }
+
+    function saveRoi(idx) {
+        if (!pendingRoi[idx]) return;
+        const roi = pendingRoi[idx];
+        fetch("/set_roi", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({
+                camera: cameras[idx].name,
+                roi: roi
+            })
+        }).then(r=>r.json()).then(data=>{
+            if (data.status === "ok") {
+                drawRoi(idx, roi);
+                cameras[idx].roi = roi;
+                pendingRoi[idx] = null;
+                document.getElementById('save-btn-'+idx).disabled = true;
+                snapshotPaused[idx] = false;
+                alert("ROI zapisane!");
+            } else {
+                alert("Błąd zapisu ROI");
+            }
+        });
+    }
+
+    function removeRoi(idx) {
+        if (!confirm("Usunąć ROI tej kamery?")) return;
+        fetch("/set_roi", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({camera: cameras[idx].name, roi: null})
+        }).then(r=>r.json()).then(data=>{
+            if (data.status === "ok") {
+                cameras[idx].roi = null;
+                document.getElementById('roi-box-'+idx).style.display = "none";
+                snapshotPaused[idx] = false;
+            } else {
+                alert("Błąd usuwania ROI");
+            }
+        });
+        pendingRoi[idx] = null;
+        document.getElementById('save-btn-'+idx).disabled = true;
+    }
+    </script>
+</body>
+</html>
