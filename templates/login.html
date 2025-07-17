@@ -4,101 +4,25 @@
     <title>Logowanie ANPR</title>
     <link rel="icon" type="image/png" href="{{ url_for('static', filename='logo.png') }}">
     <style>
-        body { font-family: Arial, sans-serif; margin: 0; background: #f8fafc;}
-        .navbar {
-            display: flex;
-            flex-wrap: wrap;
-            align-items: center;
-            gap: 10px;
-            background: #f7f7f7;
-            border-radius: 12px;
-            box-shadow: 0 2px 16px #0001;
-            padding: 13px 24px 13px 24px;
-            margin-bottom: 32px;
-        }
-        .navbar-user {
-            margin-right: 22px;
-            font-weight: 500;
-            color: #294274;
-        }
-        .navbar a, .navbar button {
-            display: inline-block;
-            padding: 7px 19px;
-            border: none;
-            border-radius: 6px;
-            background: #e3eafc;
-            color: #294274;
-            font-size: 1em;
-            font-weight: 500;
-            text-decoration: none;
-            cursor: pointer;
-            transition: background 0.17s, color 0.13s;
-            margin-right: 0;
-        }
-        .navbar a:hover, .navbar button:hover {
-            background: #294274;
-            color: #fff;
-        }
-        .navbar .admin { background: #ffe1cf; color: #c76010; }
-        .navbar .admin:hover { background: #c76010; color: #fff;}
-        .box {
-            max-width: 350px;
-            margin: 80px auto 0 auto;
-            border: 1px solid #dde;
-            background: #fff;
-            padding: 36px 30px 30px 30px;
-            border-radius: 13px;
-            box-shadow: 0 2px 18px #c6e1ff44;
-        }
-        .box h2 { text-align:center; margin-bottom: 24px; color:#294274;}
-        label { font-size:1.08em; margin-bottom:3px; color:#294274;}
-        input[type="text"], input[type="password"] {
-            width: 100%; margin-bottom:16px; padding: 9px 12px;
-            border-radius:6px; border:1px solid #bdd2ee; font-size:1.03em; box-sizing: border-box;
-        }
-        button {
-            width: 100%; padding: 11px;
-            background: #3d5c9b; color: #fff; border: none; border-radius:6px;
-            font-size: 1.09em; font-weight: 600; cursor: pointer;
-            transition: background 0.17s;
-            margin-top:8px;
-        }
-        button:hover { background: #2b3f65; }
-        .err { color: #e00; background:#fff3f3; padding:10px 0; border-radius:6px; text-align:center; margin-bottom:15px;}
-        img.logo { display: block; margin:0 auto 22px auto; max-width:90px;}
+        body { font-family: Arial; background: #f7f9ff; margin:0;}
+        .login-box { max-width: 400px; margin: 120px auto 0; background: #fff; border-radius: 12px; box-shadow: 0 4px 24px #0002; padding: 42px 38px;}
+        h2 { text-align: center; }
+        input { width: 100%; padding: 11px 12px; margin-bottom: 18px; border: 1px solid #bbb; border-radius: 8px; }
+        button { width: 100%; padding: 10px; border: none; border-radius: 8px; background: #294274; color: #fff; font-size: 1.1em;}
+        button:hover { background: #263c6b;}
+        .msg { color: red; margin-bottom: 12px; text-align:center;}
     </style>
 </head>
 <body>
-    <!-- Navbar można wyświetlić tylko gdy użytkownik jest zalogowany -->
-    {% if user.is_authenticated %}
-    <div class="navbar">
-        <span class="navbar-user">
-            Zalogowany: <b>{{ user.id }}</b> (rola: <b>{{ user.role }}</b>)
-        </span>
-        <a href="{{ url_for('index') }}">Wyniki rozpoznania tablic</a>
-        <a href="{{ url_for('live') }}">Podgląd kamer na żywo</a>
-        <a href="{{ url_for('logout') }}">Wyloguj</a>
-        {% if user.role == 'admin' %}
-            <a href="{{ url_for('admin') }}" class="admin">Panel admina</a>
-            <a href="{{ url_for('manage_users') }}" class="admin">Zarządzaj użytkownikami</a>
-            <a href="{{ url_for('admin_cameras') }}" class="admin">Kamery (zarządzaj)</a>
-            <a href="{{ url_for('export_csv') }}" class="admin">Eksportuj detekcje do CSV</a>
-        {% endif %}
-    </div>
-    {% endif %}
-
-    <div class="box">
-        <img src="{{ url_for('static', filename='logo.png') }}" class="logo" alt="Logo">
+    <div class="login-box">
         <h2>Logowanie</h2>
-        {% if error %}
-        <div class="err">{{ error }}</div>
-        {% endif %}
         <form method="post">
-            <label>Login:</label>
-            <input name="username" type="text" autocomplete="username" required>
-            <label>Hasło:</label>
-            <input type="password" name="password" autocomplete="current-password" required>
-            <button type="submit">Zaloguj</button>
+            <input name="username" placeholder="Login" required autofocus>
+            <input type="password" name="password" placeholder="Hasło" required>
+            {% if msg %}
+                <div class="msg">{{ msg }}</div>
+            {% endif %}
+            <button type="submit">Zaloguj się</button>
         </form>
     </div>
 </body>
