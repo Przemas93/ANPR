@@ -1,48 +1,34 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Podgląd kamer na żywo</title>
-    <link rel="icon" type="image/png" href="{{ url_for('static', filename='logo.png') }}">
-    <style>
-        body { font-family: Arial; margin:40px;}
-        .navbar { display: flex; gap: 10px; background: #f7f7f7; border-radius: 12px; box-shadow: 0 2px 16px #0001; padding: 13px 24px; margin-bottom: 32px;}
-        .navbar-user { margin-right: 22px; font-weight: 500; color: #294274;}
-        .navbar a { padding: 7px 19px; border: none; border-radius: 6px; background: #e3eafc; color: #294274; font-size: 1em; font-weight: 500; text-decoration: none; cursor: pointer;}
-        .navbar a:hover { background: #294274; color: #fff;}
-        h2 { margin-top:0;}
-        .camera-list { display: flex; flex-wrap: wrap; gap: 40px;}
-        .camera-box { background: #f6f6f6; border-radius:12px; box-shadow: 0 1px 10px #0001; padding:16px 28px; margin-bottom:16px;}
-        .camera-title { font-size:1.1em; font-weight:600; margin-bottom:10px;}
-    </style>
-</head>
-<body>
-    <div class="navbar">
-        <span class="navbar-user">
-            Zalogowany: <b>{{ user.id }}</b> (rola: <b>{{ user.role }}</b>)
-        </span>
-        <a href="{{ url_for('index') }}">Wyniki rozpoznania tablic</a>
-        <a href="{{ url_for('live') }}">Podgląd kamer na żywo</a>
-        <a href="{{ url_for('manage_wanted') }}">Lista poszukiwanych</a>
-        <a href="{{ url_for('logout') }}">Wyloguj</a>
-        {% if user.role == 'admin' %}
-            <a href="{{ url_for('admin_cameras') }}" class="admin">Panel admina</a>
-            <a href="{{ url_for('manage_users') }}" class="admin">Zarządzaj użytkownikami</a>
-            <a href="{{ url_for('admin_cameras') }}" class="admin">Kamery (zarządzaj)</a>
-            <a href="{{ url_for('export_csv') }}" class="admin">Eksportuj detekcje do CSV</a>
-        {% endif %}
-    </div>
-
-    <h2>Podgląd kamer na żywo</h2>
-    <div class="camera-list">
-        {% for cam in cameras %}
-        <div class="camera-box">
-            <div class="camera-title">{{ cam.name }}</div>
-            <div>
-                <video src="{{ cam.rtsp_url }}" width="320" height="240" controls autoplay muted></video>
-                <p><i>RTSP: {{ cam.rtsp_url }}</i></p>
-            </div>
-        </div>
-        {% endfor %}
-    </div>
-</body>
-</html>
+  </style>
+ </head>
+ <body>
+     <div class="navbar">
+         <span class="navbar-user">
+             Zalogowany: <b>{{ user.id }}</b> (rola: <b>{{ user.role }}</b>)
+         </span>
+         <a href="{{ url_for('index') }}">Wyniki rozpoznania tablic</a>
+         <a href="{{ url_for('live') }}">Podgląd kamer na żywo</a>
+         <a href="{{ url_for('manage_wanted') }}">Lista poszukiwanych</a>
+         <a href="{{ url_for('logout') }}">Wyloguj</a>
+         {% if user.role == 'admin' %}
+             <a href="{{ url_for('admin_cameras') }}" class="admin">Panel admina</a>
+             <a href="{{ url_for('manage_users') }}" class="admin">Zarządzaj użytkownikami</a>
+             <a href="{{ url_for('admin_cameras') }}" class="admin">Kamery (zarządzaj)</a>
+             <a href="{{ url_for('export_csv') }}" class="admin">Eksportuj detekcje do CSV</a>
+         {% endif %}
+     </div>
+ 
+     <h2>Podgląd kamer na żywo</h2>
+     <div class="camera-list">
+         {% for cam in cameras %}
+         <div class="camera-box">
+             <div class="camera-title">{{ cam.name }}</div>
+             <div>
+-                <video src="{{ cam.rtsp_url }}" width="320" height="240" controls autoplay muted></video>
++                <video src="{{ cam.rtsp_url }}" width="320" height="240" controls autoplay muted loop></video>
+                 <p><i>RTSP: {{ cam.rtsp_url }}</i></p>
+             </div>
+         </div>
+         {% endfor %}
+     </div>
+ </body>
+ </html>
