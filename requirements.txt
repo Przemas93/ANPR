@@ -1,1 +1,10 @@
-
+Flask
+flask-login
+opencv-python
+ultralytics
+easyocr
+pytesseract
+pillow
+numpy
+wsdiscovery
+onvif-zeep
