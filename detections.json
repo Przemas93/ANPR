@@ -2471,34 +2471,6 @@
     "full_img_path": "captures/Kamera 1_20250622_191827_737192_full.jpg"
   },
   {
-    "timestamp": "2025-06-22 19:18:29",
-    "camera": "Kamera 4",
-    "number": "1LEO6J@",
-    "img_path": "captures/Kamera 4_20250622_191829_503744_plate.jpg",
-    "full_img_path": "captures/Kamera 4_20250622_191829_504888_full.jpg"
-  },
-  {
-    "timestamp": "2025-06-22 19:18:29",
-    "camera": "Kamera 4",
-    "number": "'7t",
-    "img_path": "captures/Kamera 4_20250622_191829_799873_plate.jpg",
-    "full_img_path": "captures/Kamera 4_20250622_191829_801124_full.jpg"
-  },
-  {
-    "timestamp": "2025-06-22 19:18:35",
-    "camera": "Kamera 4",
-    "number": "ELE06J8",
-    "img_path": "captures/Kamera 4_20250622_191835_250074_plate.jpg",
-    "full_img_path": "captures/Kamera 4_20250622_191835_251127_full.jpg"
-  },
-  {
-    "timestamp": "2025-06-22 19:18:38",
-    "camera": "Kamera 4",
-    "number": "1LEO6J@",
-    "img_path": "captures/Kamera 4_20250622_191838_357445_plate.jpg",
-    "full_img_path": "captures/Kamera 4_20250622_191838_359372_full.jpg"
-  },
-  {
     "timestamp": "2025-06-22 19:18:38",
     "camera": "Kamera 4",
     "number": "17i;",
@@ -3876,82 +3848,5 @@
     "number": "",
     "img_path": "captures/Kamera 1_20250625_031302_523915_plate.jpg",
     "full_img_path": "captures/Kamera 1_20250625_031302_533963_full.jpg"
-  },
-  {
-    "timestamp": "2025-06-25 03:13:09",
-    "camera": "Kamera 1",
-    "number": "",
-    "img_path": "captures/Kamera 1_20250625_031309_528295_plate.jpg",
-    "full_img_path": "captures/Kamera 1_20250625_031309_532120_full.jpg"
-  },
-  {
-    "timestamp": "2025-06-25 03:13:10",
-    "camera": "Kamera 1",
-    "number": "",
-    "img_path": "captures/Kamera 1_20250625_031310_736942_plate.jpg",
-    "full_img_path": "captures/Kamera 1_20250625_031310_741774_full.jpg"
-  },
-  {
-    "timestamp": "2025-06-25 03:13:18",
-    "camera": "Kamera 1",
-    "number": "",
-    "img_path": "captures/Kamera 1_20250625_031318_325042_plate.jpg",
-    "full_img_path": "captures/Kamera 1_20250625_031318_327967_full.jpg"
-  },
-  {
-    "timestamp": "2025-06-25 03:13:19",
-    "camera": "Kamera 1",
-    "number": "",
-    "img_path": "captures/Kamera 1_20250625_031319_250555_plate.jpg",
-    "full_img_path": "captures/Kamera 1_20250625_031319_253257_full.jpg"
-  },
-  {
-    "timestamp": "2025-06-25 03:13:27",
-    "camera": "Kamera 1",
-    "number": "",
-    "img_path": "captures/Kamera 1_20250625_031327_109700_plate.jpg",
-    "full_img_path": "captures/Kamera 1_20250625_031327_112604_full.jpg"
-  },
-  {
-    "timestamp": "2025-06-25 03:13:29",
-    "camera": "Kamera 1",
-    "number": "",
-    "img_path": "captures/Kamera 1_20250625_031328_956986_plate.jpg",
-    "full_img_path": "captures/Kamera 1_20250625_031328_963742_full.jpg"
-  },
-  {
-    "timestamp": "2025-06-25 03:13:36",
-    "camera": "Kamera 1",
-    "number": "",
-    "img_path": "captures/Kamera 1_20250625_031336_532604_plate.jpg",
-    "full_img_path": "captures/Kamera 1_20250625_031336_536933_full.jpg"
-  },
-  {
-    "timestamp": "2025-06-25 03:13:39",
-    "camera": "Kamera 1",
-    "number": "",
-    "img_path": "captures/Kamera 1_20250625_031339_313850_plate.jpg",
-    "full_img_path": "captures/Kamera 1_20250625_031339_319169_full.jpg"
-  },
-  {
-    "timestamp": "2025-06-25 03:13:45",
-    "camera": "Kamera 1",
-    "number": "",
-    "img_path": "captures/Kamera 1_20250625_031345_433423_plate.jpg",
-    "full_img_path": "captures/Kamera 1_20250625_031345_436190_full.jpg"
-  },
-  {
-    "timestamp": "2025-06-25 03:13:51",
-    "camera": "Kamera 1",
-    "number": "",
-    "img_path": "captures/Kamera 1_20250625_031351_190948_plate.jpg",
-    "full_img_path": "captures/Kamera 1_20250625_031351_209516_full.jpg"
-  },
-  {
-    "timestamp": "2025-06-25 03:13:53",
-    "camera": "Kamera 1",
-    "number": "",
-    "img_path": "captures/Kamera 1_20250625_031353_907143_plate.jpg",
-    "full_img_path": "captures/Kamera 1_20250625_031353_909967_full.jpg"
   }
 ]

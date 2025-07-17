@@ -5,40 +5,10 @@
     <link rel="icon" type="image/png" href="{{ url_for('static', filename='logo.png') }}">
     <style>
     body { font-family: Arial, sans-serif; margin:40px;}
-    .navbar {
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        gap: 10px;
-        background: #f7f7f7;
-        border-radius: 12px;
-        box-shadow: 0 2px 16px #0001;
-        padding: 13px 24px 13px 24px;
-        margin-bottom: 32px;
-    }
-    .navbar-user {
-        margin-right: 22px;
-        font-weight: 500;
-        color: #294274;
-    }
-    .navbar a, .navbar button {
-        display: inline-block;
-        padding: 7px 19px;
-        border: none;
-        border-radius: 6px;
-        background: #e3eafc;
-        color: #294274;
-        font-size: 1em;
-        font-weight: 500;
-        text-decoration: none;
-        cursor: pointer;
-        transition: background 0.17s, color 0.13s;
-        margin-right: 0;
-    }
-    .navbar a:hover, .navbar button:hover {
-        background: #294274;
-        color: #fff;
-    }
+    .navbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; background: #f7f7f7; border-radius: 12px; box-shadow: 0 2px 16px #0001; padding: 13px 24px 13px 24px; margin-bottom: 32px;}
+    .navbar-user { margin-right: 22px; font-weight: 500; color: #294274; }
+    .navbar a, .navbar button { display: inline-block; padding: 7px 19px; border: none; border-radius: 6px; background: #e3eafc; color: #294274; font-size: 1em; font-weight: 500; text-decoration: none; cursor: pointer; transition: background 0.17s, color 0.13s; margin-right: 0;}
+    .navbar a:hover, .navbar button:hover { background: #294274; color: #fff;}
     .navbar .admin { background: #ffe1cf; color: #c76010; }
     .navbar .admin:hover { background: #c76010; color: #fff;}
     table { border-collapse:collapse; width: 100%; }
@@ -60,20 +30,20 @@
         <a href="{{ url_for('live') }}">Podgląd kamer na żywo</a>
         <a href="{{ url_for('logout') }}">Wyloguj</a>
         {% if user.role == 'admin' %}
-            <a href="{{ url_for('admin') }}" class="admin">Panel admina</a>
+            <a href="{{ url_for('admin_cameras') }}" class="admin">Panel admina</a>
             <a href="{{ url_for('manage_users') }}" class="admin">Zarządzaj użytkownikami</a>
             <a href="{{ url_for('admin_cameras') }}" class="admin">Kamery (zarządzaj)</a>
             <a href="{{ url_for('export_csv') }}" class="admin">Eksportuj detekcje do CSV</a>
         {% endif %}
     </div>
 
-    <h2>Kamery IP</h2>
+    <h2>Kamery i pliki wideo</h2>
     {% if msg %}
       <div class="msg">{{ msg }}</div>
     {% endif %}
 
     <table>
-        <tr><th>Nazwa</th><th>RTSP URL</th><th>Edycja</th><th>Usuń</th></tr>
+        <tr><th>Nazwa</th><th>Źródło (RTSP lub plik)</th><th>Edycja</th><th>Usuń</th></tr>
         {% for cam in cameras %}
         <tr>
           <td>
@@ -83,6 +53,11 @@
           </td>
           <td>
               <input type="text" name="edit_url" value="{{ cam.rtsp_url }}" required>
+              {% if cam.rtsp_url.endswith('.mp4') or cam.rtsp_url.endswith('.avi') or cam.rtsp_url.endswith('.mov') or cam.rtsp_url.endswith('.mkv') or cam.rtsp_url.endswith('.webm') %}
+              <span style="color:#008;">[PLIK WIDEO]</span>
+              {% else %}
+              <span style="color:#090;">[KAMERA]</span>
+              {% endif %}
           </td>
           <td>
               <button type="submit" class="edit-btn">Zapisz</button>
@@ -98,13 +73,20 @@
         {% endfor %}
     </table>
 
-    <h3>Dodaj nową kamerę</h3>
+    <h3>Dodaj nową kamerę (RTSP)</h3>
     <form method="post">
         <div class="form-row">
             Nazwa: <input name="cam_name" required>
             RTSP URL: <input name="cam_url" style="width:320px;" required>
             <button type="submit" name="add_camera" value="1">Dodaj</button>
         </div>
+    </form>
+
+    <h3>Dodaj plik wideo jako kamerę</h3>
+    <form method="post" enctype="multipart/form-data">
+        Nazwa: <input name="video_name" required>
+        Plik MP4/AVI/MOV/MKV/WEBM: <input type="file" name="video_file" accept=".mp4,.avi,.mov,.mkv,.webm" required>
+        <button type="submit" name="add_video" value="1">Dodaj wideo</button>
     </form>
     <p><a href="{{ url_for('index') }}">↩ Powrót</a></p>
 </body>
