@@ -1,110 +1,95 @@
-import sys
 import os
-
-# Naprawa katalogu uruchamiania dla EXE
-if getattr(sys, 'frozen', False):
-    # Aplikacja uruchomiona jako EXE
-    os.chdir(os.path.dirname(sys.executable))
-else:
-    # Normalnie jako .py
-    os.chdir(os.path.dirname(os.path.abspath(__file__)))
-
 import cv2
-from ultralytics import YOLO
-import easyocr
 import time
-import threading
 import json
 from datetime import datetime
+from ultralytics import YOLO
+import easyocr
 from database import add_plate
-import re
 
-# Katalogi na snapshoty i detekcje
-os.makedirs('snapshots', exist_ok=True)
+CAMERAS_PATH = "cameras.json"
+SNAPSHOTS_DIR = "static/snapshots"
+CAPTURES_DIR = "static/captures"
+MODEL_PATH = "license_plate_detector.pt"
 
-# Inicjalizacja modeli
-model = YOLO("license_plate_detector.pt")
-reader = easyocr.Reader(['pl', 'en'])
+def load_cameras():
+    if not os.path.isfile(CAMERAS_PATH):
+        return []
+    with open(CAMERAS_PATH, encoding="utf-8") as f:
+        return json.load(f)
 
-def filter_plate(text):
-    PLATE_REGEX = re.compile(r"[A-Z]{2,3}[A-Z0-9]{4,5}")
-    text = text.upper().replace(" ", "")
-    match = PLATE_REGEX.match(text)
-    return match.group() if match else None
+def ensure_dirs():
+    os.makedirs(SNAPSHOTS_DIR, exist_ok=True)
+    os.makedirs(CAPTURES_DIR, exist_ok=True)
 
-ACTIVE_THREADS = {}
-RUNNING_FLAGS = {}
+def ocr_image_easyocr(img):
+    reader = easyocr.Reader(['pl', 'en'], gpu=False)
+    # Konwersja do RGB dla easyocr
+    img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    result = reader.readtext(img_rgb, detail=0, allowlist='ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789')
+    if result:
+        return result[0]
+    return ""
 
-def process_camera(name, rtsp_url, stop_event, interval=5):
-    cap = cv2.VideoCapture(rtsp_url)
-    os.makedirs(f'captures/{name}', exist_ok=True)
-    print(f"Start kamery: {name}")
-    while not stop_event.is_set():
+def run_detection_on_camera(cam):
+    cap = cv2.VideoCapture(cam["rtsp_url"])
+    if not cap.isOpened():
+        print(f"[!] Nie można otworzyć kamery: {cam['name']} ({cam['rtsp_url']})")
+        return
+
+    print(f"[*] Start detekcji dla kamery: {cam['name']}")
+    model = YOLO(MODEL_PATH)
+    reader = easyocr.Reader(['pl', 'en'], gpu=False)
+
+    while True:
         ret, frame = cap.read()
-        if not ret or frame is None:
-            print(f"[{name}] Brak klatki, ponawiam za 2 sekundy...")
+        if not ret:
+            print(f"[!] Utracono obraz z kamery: {cam['name']}")
             time.sleep(2)
             continue
 
-        # --- ZAPIS SNAPSHOTA KAŻDĄ KLATKĘ ---
-        snapshot_path = f'snapshots/{name}.jpg'
-        cv2.imwrite(snapshot_path, frame)
-
-        # --- ROZPOZNAWANIE TABLIC ---
         results = model(frame)
-        found_plate = False
-        for r in results:
-            for box in r.boxes:
-                x1, y1, x2, y2 = map(int, box.xyxy[0])
+        for result in results:
+            for box in result.boxes:
+                x1, y1, x2, y2 = [int(coord) for coord in box.xyxy[0].tolist()]
                 plate_img = frame[y1:y2, x1:x2]
-                ocr_result = reader.readtext(plate_img)
-                for bbox, text, prob in ocr_result:
-                    number = filter_plate(text)
-                    if number and prob > 0.5:
-                        now = datetime.now().strftime("%Y%m%d_%H%M%S")
-                        img_path = f'captures/{name}/{now}.jpg'
-                        cv2.imwrite(img_path, frame)
-                        add_plate(name, number, img_path)
-                        print(f"[{name}] Zapisano: {number} ({img_path})")
-                        found_plate = True
-                        break
-                if found_plate:
-                    break
-        time.sleep(interval)
+                # OCR przez easyocr
+                img_rgb = cv2.cvtColor(plate_img, cv2.COLOR_BGR2RGB)
+                ocr_result = reader.readtext(img_rgb, detail=0, allowlist='ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789')
+                number = ocr_result[0] if ocr_result else ""
+
+                # Zapis obrazów
+                timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+                filename = f"{cam['name']}_{timestamp}_{number.replace(' ','_')}"
+                img_path = f"snapshots/{filename}.jpg"
+                full_img_path = f"captures/{cam['name']}_{timestamp}.jpg"
+                cv2.imwrite(os.path.join("static", img_path), plate_img)
+                cv2.imwrite(os.path.join("static", full_img_path), frame)
+
+                # Zapisz detekcję do bazy (database.py)
+                add_plate(
+                    datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                    cam["name"],
+                    number,
+                    img_path,
+                    full_img_path
+                )
+
+                print(f"[+] Detekcja: {cam['name']} | {number}")
+
+        time.sleep(1)  # Dla bezpieczeństwa
+
     cap.release()
-    print(f"[{name}] Zatrzymano kamerę!")
 
-def reload_cameras():
-    while True:
-        try:
-            with open('cameras.json') as f:
-                cameras = json.load(f)
-        except Exception as e:
-            print("Błąd odczytu cameras.json:", e)
-            cameras = []
+def main():
+    ensure_dirs()
+    cameras = load_cameras()
+    if not cameras:
+        print("[!] Brak skonfigurowanych kamer w cameras.json!")
+        return
 
-        new_names = set(c['name'] for c in cameras)
-        old_names = set(ACTIVE_THREADS.keys())
+    for cam in cameras:
+        run_detection_on_camera(cam)
 
-        # Dodaj nowe kamery
-        for cam in cameras:
-            if cam['name'] not in ACTIVE_THREADS:
-                stop_event = threading.Event()
-                RUNNING_FLAGS[cam['name']] = stop_event
-                t = threading.Thread(target=process_camera, args=(cam['name'], cam['rtsp_url'], stop_event))
-                t.start()
-                ACTIVE_THREADS[cam['name']] = t
-                print(f"Uruchomiono kamerę {cam['name']}")
-
-        # Zatrzymaj usunięte kamery
-        for name in list(old_names - new_names):
-            RUNNING_FLAGS[name].set()
-            ACTIVE_THREADS[name].join()
-            del ACTIVE_THREADS[name]
-            del RUNNING_FLAGS[name]
-            print(f"Zatrzymano kamerę {name}")
-
-        time.sleep(10)  # co 10 sekund sprawdź cameras.json
-
-if __name__ == '__main__':
-    reload_cameras()
+if __name__ == "__main__":
+    main()
